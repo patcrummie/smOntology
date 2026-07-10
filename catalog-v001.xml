@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    <group id="Folder Repository, directory=, recursive=true, Auto-Update=true, version=2" prefer="public" xml:base="">
+        <uri id="Automatically generated entry, Timestamp=1783114110867" name="http://www.hsu-ifa.de/ontologies/ISA-TR88" uri="IndustrialStandard-ODP-ISA88_v1.4.2_ISA88.owl"/>
+    </group>
+</catalog>

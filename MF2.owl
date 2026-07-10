@@ -1,0 +1,266 @@
+@prefix : <http://www.semanticweb.org/pat_c/ontologies/2026/5/MF2#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://www.semanticweb.org/pat_c/ontologies/2026/5/MF2> .
+
+<http://www.semanticweb.org/pat_c/ontologies/2026/5/MF2> rdf:type owl:Ontology ;
+    rdfs:comment "Manufacturing Ontology v2 — extends MF1 with MaterialLot, PackagingUnit, and unit individuals." .
+
+
+#################################################################
+#    Data Properties
+#################################################################
+
+###  Lot identifier (string)
+:lotID rdf:type owl:DatatypeProperty ;
+       rdfs:domain :MaterialLot ;
+       rdfs:range xsd:string ;
+       rdfs:label "Lot ID" .
+
+###  Material identifier (string)
+:materialID rdf:type owl:DatatypeProperty ;
+            rdfs:domain :MaterialLot ;
+            rdfs:range xsd:string ;
+            rdfs:label "Material ID" .
+
+###  Numeric value for a MaterialQuantity (mass or volume amount)
+:hasNumericValue rdf:type owl:DatatypeProperty ;
+                 rdfs:domain :MaterialQuantity ;
+                 rdfs:range xsd:decimal ;
+                 rdfs:label "Numeric Value" .
+
+###  Count of packaging units in a lot
+:packagingUnitCount rdf:type owl:DatatypeProperty ;
+                    rdfs:domain :MaterialLot ;
+                    rdfs:range xsd:nonNegativeInteger ;
+                    rdfs:label "Packaging Unit Count" .
+
+###  The string value of a UOM abbreviation
+:abbreviationValue rdf:type owl:DatatypeProperty ;
+                   rdfs:domain :UOMAbbreviation ;
+                   rdfs:range xsd:string ;
+                   rdfs:label "Abbreviation Value" .
+
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  General quantity relationship (kept for flexibility)
+:hasQuantity rdf:type owl:ObjectProperty ;
+             rdfs:subPropertyOf owl:topObjectProperty .
+
+###  Links a MaterialLot to its quantity
+:hasMaterialQuantity rdf:type owl:ObjectProperty ;
+                     rdfs:domain :MaterialLot ;
+                     rdfs:range :MaterialQuantity ;
+                     rdfs:label "Has Material Quantity" .
+
+###  Links a MaterialLot to the PackagingUnit type used for count-based quantities
+:countOf rdf:type owl:ObjectProperty ;
+         rdfs:domain :MaterialLot ;
+         rdfs:range :PackagingUnit ;
+         rdfs:label "Count Of" ;
+         rdfs:comment "Used together with packagingUnitCount to express lot quantity as N units of a given PackagingUnit." .
+
+###  Links a Measure to its unit of measurement
+:hasUnitOfMeasurement rdf:type owl:ObjectProperty ;
+                      rdfs:domain :Measure ;
+                      rdfs:range :UnitOfMeasurement ;
+                      rdfs:label "Has Unit Of Measurement" .
+
+###  Links a MaterialQuantity to its unit of measurement
+:quantityHasUnit rdf:type owl:ObjectProperty ;
+                 rdfs:domain :MaterialQuantity ;
+                 rdfs:range :UnitOfMeasurement ;
+                 rdfs:label "Quantity Has Unit" .
+
+###  Links a UnitOfMeasurement individual to its abbreviation
+:hasAbbreviation rdf:type owl:ObjectProperty ;
+                 rdfs:domain :UnitOfMeasurement ;
+                 rdfs:range :UOMAbbreviation ;
+                 rdfs:label "Has Abbreviation" .
+
+###  Tank type classification
+:hasTankType rdf:type owl:ObjectProperty ;
+             rdfs:subPropertyOf owl:topObjectProperty ;
+             rdfs:domain :Tank ;
+             rdfs:range :TankType ;
+             rdfs:label "Has Tank Type" .
+
+###  Volume of a container
+:hasVolume rdf:type owl:ObjectProperty ;
+           rdfs:subPropertyOf owl:topObjectProperty ;
+           rdfs:domain :Container ;
+           rdfs:label "Has Volume" .
+
+###  Links a PackagingUnit to the quantity it holds (mass or volume per unit)
+:hasPackagingQuantity rdf:type owl:ObjectProperty ;
+                      rdfs:domain :PackagingUnit ;
+                      rdfs:range :MaterialQuantity ;
+                      rdfs:label "Has Packaging Quantity" .
+
+###  Links a PackagingUnit to the type of container it uses
+:hasPackageContainerType rdf:type owl:ObjectProperty ;
+                         rdfs:domain :PackagingUnit ;
+                         rdfs:range :PackageContainer ;
+                         rdfs:label "Has Package Container Type" .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  --- Physical containers ---
+
+:Container rdf:type owl:Class ;
+           rdfs:label "Container" .
+
+:Vessel rdf:type owl:Class ;
+        rdfs:subClassOf :Container ;
+        rdfs:label "Vessel" .
+
+:Tank rdf:type owl:Class ;
+      rdfs:subClassOf :Vessel ;
+      rdfs:label "Tank" .
+
+:TankType rdf:type owl:Class ;
+          rdfs:label "Tank Type" .
+
+###  Packaging containers (sub-hierarchy of Container)
+:PackageContainer rdf:type owl:Class ;
+                  rdfs:subClassOf :Container ;
+                  rdfs:label "Package Container" ;
+                  rdfs:comment "A container used as a packaging unit for material lots." .
+
+:Carton rdf:type owl:Class ;
+        rdfs:subClassOf :PackageContainer ;
+        rdfs:label "Carton" .
+
+:Box rdf:type owl:Class ;
+     rdfs:subClassOf :PackageContainer ;
+     rdfs:label "Box" .
+
+:Drum rdf:type owl:Class ;
+      rdfs:subClassOf :PackageContainer ;
+      rdfs:label "Drum" .
+
+:Cannister rdf:type owl:Class ;
+           rdfs:subClassOf :PackageContainer ;
+           rdfs:label "Cannister" .
+
+:Tanker rdf:type owl:Class ;
+        rdfs:subClassOf :PackageContainer ;
+        rdfs:label "Tanker" .
+
+
+###  --- Material ---
+
+:Material rdf:type owl:Class ;
+          rdfs:label "Material" .
+
+###  A traceable batch/lot of material
+:MaterialLot rdf:type owl:Class ;
+             rdfs:label "Material Lot" ;
+             rdfs:comment "A given quantity of material that can be tracked. May be a raw ingredient, intermediate product, byproduct, waste, or finished product." .
+
+###  Quantity of material in a lot (expressed as mass, volume, or count of packaging units)
+:MaterialQuantity rdf:type owl:Class ;
+                  rdfs:label "Material Quantity" .
+
+###  Capacity of a container
+:Capacity rdf:type owl:Class ;
+          rdfs:label "Capacity" .
+
+
+###  --- Measurement types ---
+
+:Measure rdf:type owl:Class ;
+         rdfs:label "Measure" ;
+         rdfs:comment "A type of physical measurement. Use singular noun form for all subclasses." .
+
+:Mass rdf:type owl:Class ;
+      rdfs:subClassOf :Measure ;
+      rdfs:label "Mass" .
+
+:Volume rdf:type owl:Class ;
+        rdfs:subClassOf :Measure ;
+        rdfs:label "Volume" .
+
+:Flow rdf:type owl:Class ;
+      rdfs:subClassOf :Measure ;
+      rdfs:label "Flow" .
+
+:MassFlow rdf:type owl:Class ;
+          rdfs:subClassOf :Measure ;
+          rdfs:label "Mass Flow" .
+
+
+###  --- Units of measurement ---
+
+:UnitOfMeasurement rdf:type owl:Class ;
+                   rdfs:label "Unit Of Measurement" .
+
+:UOMAbbreviation rdf:type owl:Class ;
+                 rdfs:label "UOM Abbreviation" ;
+                 rdfs:comment "The official SI abbreviation for a unit of measurement." .
+
+
+###  --- Packaging ---
+
+:PackagingUnit rdf:type owl:Class ;
+               rdfs:label "Packaging Unit" ;
+               rdfs:comment "A packaging configuration that can hold a defined quantity of material. A lot quantity may be expressed as a count of packaging units." .
+
+
+#################################################################
+#    Individuals — UOM Abbreviations
+#    (official SI abbreviations, BIPM 9th edition)
+#################################################################
+
+:abbr_kg rdf:type owl:NamedIndividual, :UOMAbbreviation ;
+         :abbreviationValue "kg" ;
+         rdfs:label "kg" .
+
+:abbr_t rdf:type owl:NamedIndividual, :UOMAbbreviation ;
+        :abbreviationValue "t" ;
+        rdfs:label "t" .
+
+:abbr_L rdf:type owl:NamedIndividual, :UOMAbbreviation ;
+        :abbreviationValue "L" ;
+        rdfs:label "L" ;
+        rdfs:comment "Both 'L' and 'l' are accepted by SI; 'L' is preferred to avoid confusion with the numeral 1." .
+
+:abbr_m3 rdf:type owl:NamedIndividual, :UOMAbbreviation ;
+         :abbreviationValue "m³" ;
+         rdfs:label "m³" .
+
+
+#################################################################
+#    Individuals — Units of Measurement
+#    Typed as both UnitOfMeasurement and the appropriate Measure
+#    subclass so they appear under the correct measurement category.
+#################################################################
+
+:Kilogram rdf:type owl:NamedIndividual, :UnitOfMeasurement, :Mass ;
+          rdfs:label "Kilogram" ;
+          :hasAbbreviation :abbr_kg .
+
+:Tonne rdf:type owl:NamedIndividual, :UnitOfMeasurement, :Mass ;
+       rdfs:label "Tonne" ;
+       rdfs:comment "Metric tonne (1 000 kg). SI symbol: t." ;
+       :hasAbbreviation :abbr_t .
+
+:Liter rdf:type owl:NamedIndividual, :UnitOfMeasurement, :Volume ;
+       rdfs:label "Liter" ;
+       :hasAbbreviation :abbr_L .
+
+:CubicMeter rdf:type owl:NamedIndividual, :UnitOfMeasurement, :Volume ;
+            rdfs:label "Cubic Meter" ;
+            :hasAbbreviation :abbr_m3 .
+
+
+###  Generated by hand from MF1 — OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi
