@@ -1,0 +1,150 @@
+@prefix : <http://www.semanticweb.org/pat_c/ontologies/2026/7/MF_Rules1#> .
+@prefix mf: <http://www.semanticweb.org/pat_c/ontologies/2026/5/MF6#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@base <http://www.semanticweb.org/pat_c/ontologies/2026/7/MF_Rules1> .
+
+###  SHACL shapes/rules for the Manufacturing Ontology.
+###  Depends on MF6 (imported below) for classes, properties and unit individuals.
+###  Requires a SHACL-SPARQL capable engine (e.g. pySHACL) to evaluate sh:sparql constraints.
+###
+###  Deployment note: this file carries both shape definitions AND reference data
+###  (the Conversion_Factor_To_Base assertions below). When validating, load MF6.owl +
+###  MF_Rules1.ttl + instance data together as the data graph, and MF_Rules1.ttl as the
+###  shapes graph — the conversion factors must be visible to the SPARQL constraint
+###  queries, which run against the data graph, not the shapes graph alone.
+
+<http://www.semanticweb.org/pat_c/ontologies/2026/7/MF_Rules1> rdf:type owl:Ontology ;
+    owl:imports <http://www.semanticweb.org/pat_c/ontologies/2026/5/MF6> ;
+    rdfs:comment "MF_Rules1. SHACL validation layer for MF6. Replaces the SWRL capacity-check sketch previously noted in MF6.owl with an equivalent SHACL-SPARQL constraint, and adds unit-conversion data so quantities expressed in different units can be normalised and compared." .
+
+
+#################################################################
+#    Prefix declarations for embedded SPARQL (sh:sparql / sh:select)
+#################################################################
+
+:SPARQL_Prefixes
+    sh:declare [
+        sh:prefix "mf" ;
+        sh:namespace "http://www.semanticweb.org/pat_c/ontologies/2026/5/MF6#"^^xsd:anyURI
+    ] ,
+    [
+        sh:prefix "rules" ;
+        sh:namespace "http://www.semanticweb.org/pat_c/ontologies/2026/7/MF_Rules1#"^^xsd:anyURI
+    ] .
+
+
+#################################################################
+#    Data Properties — Unit conversion
+#################################################################
+
+:Conversion_Factor_To_Base rdf:type owl:DatatypeProperty ;
+    rdfs:domain mf:Unit_Of_Measurement ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "Conversion Factor To Base" ;
+    rdfs:comment "Multiplier that converts one unit of this Unit_Of_Measurement into its Measure subclass's canonical base unit. Base units chosen (factor = 1): Kilogram (Mass), Cubic_Meter (Volume), Cubic_Meter_Per_Hour (Flow), Tonne_Per_Hour (Mass_Flow), Second (Time). To convert any value between two units of the same Measure: value_in_target = value_in_source * (factor_source / factor_target)." .
+
+
+#################################################################
+#    Individuals — Conversion factors asserted on existing MF6 units
+#################################################################
+
+###  Mass — base unit: Kilogram
+mf:Kilogram :Conversion_Factor_To_Base "1"^^xsd:decimal .
+mf:Tonne    :Conversion_Factor_To_Base "1000"^^xsd:decimal .
+
+###  Volume — base unit: Cubic_Meter
+mf:Cubic_Meter :Conversion_Factor_To_Base "1"^^xsd:decimal .
+mf:Liter       :Conversion_Factor_To_Base "0.001"^^xsd:decimal .
+
+###  Flow — base unit: Cubic_Meter_Per_Hour
+mf:Cubic_Meter_Per_Hour :Conversion_Factor_To_Base "1"^^xsd:decimal .
+mf:Liter_Per_Minute     :Conversion_Factor_To_Base "0.06"^^xsd:decimal .
+
+###  Mass Flow — base unit: Tonne_Per_Hour
+mf:Tonne_Per_Hour      :Conversion_Factor_To_Base "1"^^xsd:decimal .
+mf:Kilogram_Per_Minute :Conversion_Factor_To_Base "0.06"^^xsd:decimal .
+
+###  Time — base unit: Second
+mf:Second      :Conversion_Factor_To_Base "1"^^xsd:decimal .
+mf:Minute      :Conversion_Factor_To_Base "60"^^xsd:decimal .
+mf:Hour        :Conversion_Factor_To_Base "3600"^^xsd:decimal .
+mf:Day         :Conversion_Factor_To_Base "86400"^^xsd:decimal .
+mf:Millisecond :Conversion_Factor_To_Base "0.001"^^xsd:decimal .
+
+
+#################################################################
+#    Shape — Unit completeness
+#
+#    Every Unit_Of_Measurement individual must carry a conversion
+#    factor, or it cannot be normalised/compared against quantities
+#    expressed in other units. This also catches unrecognised units
+#    an LLM agent might invent: no Conversion_Factor_To_Base = violation.
+#################################################################
+
+:Unit_Of_Measurement_Shape rdf:type sh:NodeShape ;
+    sh:targetClass mf:Unit_Of_Measurement ;
+    sh:property [
+        sh:path :Conversion_Factor_To_Base ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Unit of measurement is missing a Conversion_Factor_To_Base and cannot be normalised against other units of the same Measure type." ;
+    ] .
+
+
+#################################################################
+#    Shape — Vessel capacity check
+#    (replaces the SWRL rule removed from MF6.owl)
+#
+#    Original SWRL sketch (MF6, removed):
+#      Vessel(?v) ∧ Has_Current_Content(?v, ?fc) ∧ Filled_Content(?fc)
+#      ∧ Has_Content_Quantity(?fc, ?q) ∧ Has_Numeric_Value(?q, ?qVal)
+#      ∧ Has_Capacity(?v, ?cap) ∧ Has_Numeric_Value(?cap, ?capVal)
+#      ∧ swrlb:greaterThan(?qVal, ?capVal) → Over_Capacity(?v)
+#
+#    This shape reproduces that check as a SHACL-SPARQL validation
+#    constraint, normalising both quantities to their Measure's base
+#    unit via Conversion_Factor_To_Base before comparing — closing the
+#    "units must be normalised before numeric comparison" gap the
+#    original sketch flagged but never implemented.
+#
+#    Modelling gap carried over from the original sketch (not fixed
+#    here): Has_Numeric_Value's rdfs:domain in MF6 is Material_Quantity,
+#    not Measure/Capacity. Asserting Has_Numeric_Value on a Capacity
+#    individual (as below, mirroring the original rule) entails, under
+#    OWL semantics, that the individual is also a Material_Quantity —
+#    which conflicts with the MF4 decision that Capacity is NOT a
+#    Material_Quantity. Worth a follow-up: either broaden
+#    Has_Numeric_Value's domain to Measure, or give Capacity its own
+#    numeric-value property.
+#################################################################
+
+:Vessel_Capacity_Shape rdf:type sh:NodeShape ;
+    sh:targetClass mf:Vessel ;
+    sh:sparql [
+        rdf:type sh:SPARQLConstraint ;
+        sh:message "Vessel content quantity exceeds its capacity once both are normalised to a common base unit." ;
+        sh:prefixes :SPARQL_Prefixes ;
+        sh:select """
+            SELECT $this
+            WHERE {
+                $this mf:Has_Current_Content ?fc .
+                ?fc a mf:Filled_Content ;
+                    mf:Has_Content_Quantity ?q .
+                ?q mf:Has_Numeric_Value ?qVal ;
+                   mf:Quantity_Has_Unit ?qUnit .
+                ?qUnit rules:Conversion_Factor_To_Base ?qFactor .
+                $this mf:Has_Capacity ?cap .
+                ?cap mf:Has_Numeric_Value ?capVal ;
+                     mf:Has_Unit_Of_Measurement ?capUnit .
+                ?capUnit rules:Conversion_Factor_To_Base ?capFactor .
+                BIND((?qVal * ?qFactor) AS ?qBase)
+                BIND((?capVal * ?capFactor) AS ?capBase)
+                FILTER(?qBase > ?capBase)
+            }
+        """ ;
+    ] .

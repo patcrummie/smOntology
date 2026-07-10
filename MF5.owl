@@ -1,0 +1,391 @@
+@prefix : <http://www.semanticweb.org/pat_c/ontologies/2026/5/MF5#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix swrl: <http://www.w3.org/2003/11/swrl#> .
+@prefix swrlb: <http://www.w3.org/2003/11/swrlb#> .
+@base <http://www.semanticweb.org/pat_c/ontologies/2026/5/MF5> .
+
+###  Naming convention: IRI local names use Capitalised_Words_With_Underscores.
+###  rdfs:label provides the human-readable form with spaces.
+
+<http://www.semanticweb.org/pat_c/ontologies/2026/5/MF5> rdf:type owl:Ontology ;
+    rdfs:comment "Manufacturing Ontology v5. Changes from MF4: Vessel gains Has_Current_Content property; Vessel_Content class added with disjoint subclasses Filled_Content and Empty_Content; named individual :Empty added; SWRL capacity rule updated with full property chain." .
+
+
+#################################################################
+#    Data Properties
+#################################################################
+
+:Lot_ID rdf:type owl:DatatypeProperty ;
+        rdfs:domain :Material_Lot ;
+        rdfs:range xsd:string ;
+        rdfs:label "Lot ID" .
+
+:Material_ID rdf:type owl:DatatypeProperty ;
+             rdfs:domain :Material_Lot ;
+             rdfs:range xsd:string ;
+             rdfs:label "Material ID" .
+
+:Has_Numeric_Value rdf:type owl:DatatypeProperty ;
+                   rdfs:domain :Material_Quantity ;
+                   rdfs:range xsd:decimal ;
+                   rdfs:label "Has Numeric Value" .
+
+:Packaging_Unit_Count rdf:type owl:DatatypeProperty ;
+                      rdfs:domain :Material_Lot ;
+                      rdfs:range xsd:nonNegativeInteger ;
+                      rdfs:label "Packaging Unit Count" .
+
+:Abbreviation_Value rdf:type owl:DatatypeProperty ;
+                    rdfs:domain :UOM_Abbreviation ;
+                    rdfs:range xsd:string ;
+                    rdfs:label "Abbreviation Value" .
+
+
+#################################################################
+#    Object Properties
+#################################################################
+
+:Has_Quantity rdf:type owl:ObjectProperty ;
+              rdfs:subPropertyOf owl:topObjectProperty ;
+              rdfs:label "Has Quantity" .
+
+###  Current content state of a Vessel (Filled_Content or Empty_Content)
+:Has_Current_Content rdf:type owl:ObjectProperty ;
+                     rdfs:subPropertyOf owl:topObjectProperty ;
+                     rdfs:domain :Vessel ;
+                     rdfs:range :Vessel_Content ;
+                     rdfs:label "Has Current Content" ;
+                     rdfs:comment "Points to either a Filled_Content individual (carrying material and quantity) or the :Empty individual. Functional — a vessel has exactly one current content state." ;
+                     rdf:type owl:FunctionalProperty .
+
+###  The material held by a Filled_Content
+:Has_Material rdf:type owl:ObjectProperty ;
+              rdfs:subPropertyOf owl:topObjectProperty ;
+              rdfs:domain :Filled_Content ;
+              rdfs:range :Material ;
+              rdfs:label "Has Material" .
+
+###  The quantity of material in a Filled_Content (must be Mass or Volume)
+:Has_Content_Quantity rdf:type owl:ObjectProperty ;
+                      rdfs:subPropertyOf owl:topObjectProperty ;
+                      rdfs:domain :Filled_Content ;
+                      rdfs:range :Material_Quantity ;
+                      rdfs:label "Has Content Quantity" ;
+                      rdfs:comment "The current quantity of material in the vessel. Range further constrained by the Filled_Content class restriction to Mass or Volume units only." .
+
+:Contains rdf:type owl:ObjectProperty ;
+          rdfs:subPropertyOf owl:topObjectProperty ;
+          rdfs:domain :Vessel ;
+          rdfs:range :Material ;
+          rdfs:label "Contains" ;
+          rdfs:comment "Relates a Vessel or any subclass (Tank, etc.) to the Material it holds." .
+
+:Has_Capacity rdf:type owl:ObjectProperty ;
+              rdfs:subPropertyOf owl:topObjectProperty ;
+              rdfs:domain :Vessel ;
+              rdfs:range :Capacity ;
+              rdfs:label "Has Capacity" .
+
+:Has_Material_Quantity rdf:type owl:ObjectProperty ;
+                       rdfs:domain :Material_Lot ;
+                       rdfs:range :Material_Quantity ;
+                       rdfs:label "Has Material Quantity" .
+
+:Count_Of rdf:type owl:ObjectProperty ;
+          rdfs:domain :Material_Lot ;
+          rdfs:range :Packaging_Unit ;
+          rdfs:label "Count Of" ;
+          rdfs:comment "Used together with Packaging Unit Count to express lot quantity as N units of a given Packaging Unit." .
+
+:Has_Unit_Of_Measurement rdf:type owl:ObjectProperty ;
+                         rdfs:domain :Measure ;
+                         rdfs:range :Unit_Of_Measurement ;
+                         rdfs:label "Has Unit Of Measurement" .
+
+:Quantity_Has_Unit rdf:type owl:ObjectProperty ;
+                   rdfs:domain :Material_Quantity ;
+                   rdfs:range :Unit_Of_Measurement ;
+                   rdfs:label "Quantity Has Unit" .
+
+:Has_Abbreviation rdf:type owl:ObjectProperty ;
+                  rdfs:domain :Unit_Of_Measurement ;
+                  rdfs:range :UOM_Abbreviation ;
+                  rdfs:label "Has Abbreviation" .
+
+:Has_Tank_Type rdf:type owl:ObjectProperty ;
+               rdfs:subPropertyOf owl:topObjectProperty ;
+               rdfs:domain :Tank ;
+               rdfs:range :Tank_Type ;
+               rdfs:label "Has Tank Type" .
+
+:Has_Volume rdf:type owl:ObjectProperty ;
+            rdfs:subPropertyOf owl:topObjectProperty ;
+            rdfs:domain :Container ;
+            rdfs:label "Has Volume" .
+
+:Standard_Quantity rdf:type owl:ObjectProperty ;
+                   rdfs:domain :Package_Container ;
+                   rdfs:range :Material_Quantity ;
+                   rdfs:label "Standard Quantity" ;
+                   rdfs:comment "The nominal quantity of material associated with one Package Container (e.g. a 200 L drum)." .
+
+:Content rdf:type owl:ObjectProperty ;
+         rdfs:domain :Package_Container ;
+         rdfs:range :Material ;
+         rdfs:label "Content" .
+
+:Has_Packaging_Quantity rdf:type owl:ObjectProperty ;
+                        rdfs:domain :Packaging_Unit ;
+                        rdfs:range :Material_Quantity ;
+                        rdfs:label "Has Packaging Quantity" .
+
+:Has_Package_Container_Type rdf:type owl:ObjectProperty ;
+                            rdfs:domain :Packaging_Unit ;
+                            rdfs:range :Package_Container ;
+                            rdfs:label "Has Package Container Type" .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  --- Physical containers ---
+
+:Container rdf:type owl:Class ;
+           rdfs:label "Container" .
+
+:Vessel rdf:type owl:Class ;
+        rdfs:subClassOf :Container ;
+        rdfs:label "Vessel" .
+
+:Tank rdf:type owl:Class ;
+      rdfs:subClassOf :Vessel ;
+      rdfs:label "Tank" .
+
+:Tank_Type rdf:type owl:Class ;
+           rdfs:label "Tank Type" .
+
+:Package_Container rdf:type owl:Class ;
+                   rdfs:subClassOf :Container ;
+                   rdfs:label "Package Container" ;
+                   rdfs:comment "A container used to package material lots. Has Standard Quantity and Content properties. Capacity constraint does not apply to this branch." .
+
+:Carton rdf:type owl:Class ;
+        rdfs:subClassOf :Package_Container ;
+        rdfs:label "Carton" .
+
+:Box rdf:type owl:Class ;
+     rdfs:subClassOf :Package_Container ;
+     rdfs:label "Box" .
+
+:Drum rdf:type owl:Class ;
+      rdfs:subClassOf :Package_Container ;
+      rdfs:label "Drum" .
+
+:Cannister rdf:type owl:Class ;
+           rdfs:subClassOf :Package_Container ;
+           rdfs:label "Cannister" .
+
+:Tanker rdf:type owl:Class ;
+        rdfs:subClassOf :Package_Container ;
+        rdfs:label "Tanker" .
+
+
+###  --- Vessel Content hierarchy ---
+
+###  Abstract superclass for all vessel content states
+:Vessel_Content rdf:type owl:Class ;
+                rdfs:label "Vessel Content" ;
+                rdfs:comment "The current content state of a Vessel. Either Filled_Content (material + quantity) or Empty_Content." .
+
+###  Filled_Content: carries the material being held and its current quantity.
+###  Restricted: Has_Content_Quantity must point to a Material_Quantity
+###  whose unit is Mass or Volume (not Flow, etc.).
+:Filled_Content rdf:type owl:Class ;
+                rdfs:subClassOf :Vessel_Content ;
+                rdfs:subClassOf [
+                    rdf:type owl:Restriction ;
+                    owl:onProperty :Has_Material ;
+                    owl:minCardinality "1"^^xsd:nonNegativeInteger
+                ] ;
+                rdfs:subClassOf [
+                    rdf:type owl:Restriction ;
+                    owl:onProperty :Has_Content_Quantity ;
+                    owl:minCardinality "1"^^xsd:nonNegativeInteger
+                ] ;
+                rdfs:subClassOf [
+                    rdf:type owl:Restriction ;
+                    owl:onProperty :Has_Content_Quantity ;
+                    owl:allValuesFrom [
+                        rdf:type owl:Restriction ;
+                        owl:onProperty :Quantity_Has_Unit ;
+                        owl:allValuesFrom [
+                            rdf:type owl:Class ;
+                            owl:unionOf ( :Mass :Volume )
+                        ]
+                    ]
+                ] ;
+                rdfs:label "Filled Content" ;
+                rdfs:comment "Represents a vessel that contains material. Must have at least one Has_Material and one Has_Content_Quantity, where the quantity unit is Mass or Volume." .
+
+###  Empty_Content: represents the vessel being empty.
+###  Intentionally has no Has_Material or Has_Content_Quantity.
+:Empty_Content rdf:type owl:Class ;
+               rdfs:subClassOf :Vessel_Content ;
+               rdfs:label "Empty Content" ;
+               rdfs:comment "Represents a vessel that contains no material. The singleton individual :Empty is the standard way to assert this state." .
+
+###  Filled_Content and Empty_Content are mutually exclusive
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( :Filled_Content :Empty_Content )
+] .
+
+
+###  --- Material ---
+
+:Material rdf:type owl:Class ;
+          rdfs:label "Material" .
+
+:Material_Lot rdf:type owl:Class ;
+              rdfs:label "Material Lot" ;
+              rdfs:comment "A given quantity of material that can be tracked. May be a raw ingredient, intermediate product, byproduct, waste, or finished product." .
+
+:Material_Quantity rdf:type owl:Class ;
+                   rdfs:label "Material Quantity" .
+
+
+###  --- Measurement ---
+
+:Measure rdf:type owl:Class ;
+         rdfs:label "Measure" ;
+         rdfs:comment "A type of physical measurement. All subclass names use singular form." .
+
+:Mass rdf:type owl:Class ;
+      rdfs:subClassOf :Measure ;
+      rdfs:label "Mass" .
+
+:Volume rdf:type owl:Class ;
+        rdfs:subClassOf :Measure ;
+        rdfs:label "Volume" .
+
+:Flow rdf:type owl:Class ;
+      rdfs:subClassOf :Measure ;
+      rdfs:label "Flow" .
+
+:Mass_Flow rdf:type owl:Class ;
+           rdfs:subClassOf :Measure ;
+           rdfs:label "Mass Flow" .
+
+:Capacity rdf:type owl:Class ;
+          rdfs:subClassOf :Measure ;
+          rdfs:subClassOf [
+              rdf:type owl:Restriction ;
+              owl:onProperty :Has_Unit_Of_Measurement ;
+              owl:allValuesFrom [
+                  rdf:type owl:Class ;
+                  owl:unionOf ( :Mass :Volume )
+              ]
+          ] ;
+          rdfs:label "Capacity" ;
+          rdfs:comment "The ability of a Vessel to contain material. A Measure restricted to Mass or Volume units only. Not a material quantity — it represents potential, not actual content." .
+
+
+###  --- Units of measurement ---
+
+:Unit_Of_Measurement rdf:type owl:Class ;
+                     rdfs:label "Unit Of Measurement" .
+
+:UOM_Abbreviation rdf:type owl:Class ;
+                  rdfs:label "UOM Abbreviation" ;
+                  rdfs:comment "The official SI abbreviation for a unit of measurement (BIPM 9th edition)." .
+
+
+###  --- Packaging ---
+
+:Packaging_Unit rdf:type owl:Class ;
+                rdfs:label "Packaging Unit" ;
+                rdfs:comment "A packaging configuration for material lots. A lot quantity may be expressed as a count of Packaging Units." .
+
+
+#################################################################
+#    SWRL Rule — Capacity constraint (now fully expressible)
+#
+#    A Vessel's current content quantity must not exceed its Capacity.
+#    Requires units to be normalised before numeric comparison.
+#
+#    SWRL:
+#      Vessel(?v)
+#      ∧ Has_Current_Content(?v, ?fc)
+#      ∧ Filled_Content(?fc)
+#      ∧ Has_Content_Quantity(?fc, ?q)
+#      ∧ Has_Numeric_Value(?q, ?qVal)
+#      ∧ Has_Capacity(?v, ?cap)
+#      ∧ Has_Numeric_Value(?cap, ?capVal)
+#      ∧ swrlb:greaterThan(?qVal, ?capVal)
+#      → Over_Capacity(?v)
+#
+#    Note: add class Over_Capacity as a violation marker when implementing.
+#    Unit normalisation (e.g. litres vs cubic metres) must be handled
+#    via additional SWRL rules or a pre-processing step before comparison.
+#################################################################
+
+
+#################################################################
+#    Individuals — Empty Content
+#################################################################
+
+###  The singleton individual representing an empty vessel state
+:Empty rdf:type owl:NamedIndividual, :Empty_Content ;
+       rdfs:label "Empty" ;
+       rdfs:comment "Assert myTank Has_Current_Content :Empty to indicate the vessel contains no material." .
+
+
+#################################################################
+#    Individuals — UOM Abbreviations (BIPM SI 9th edition)
+#################################################################
+
+:Kilogram_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                       :Abbreviation_Value "kg" ;
+                       rdfs:label "Kilogram Abbreviation" .
+
+:Tonne_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                    :Abbreviation_Value "t" ;
+                    rdfs:label "Tonne Abbreviation" .
+
+:Liter_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                    :Abbreviation_Value "L" ;
+                    rdfs:label "Liter Abbreviation" ;
+                    rdfs:comment "Both 'L' and 'l' are accepted by SI; 'L' is preferred to avoid confusion with the numeral 1." .
+
+:Cubic_Meter_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                          :Abbreviation_Value "m³" ;
+                          rdfs:label "Cubic Meter Abbreviation" .
+
+
+#################################################################
+#    Individuals — Units of Measurement
+#################################################################
+
+:Kilogram rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Mass ;
+          rdfs:label "Kilogram" ;
+          :Has_Abbreviation :Kilogram_Abbreviation .
+
+:Tonne rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Mass ;
+       rdfs:label "Tonne" ;
+       rdfs:comment "Metric tonne (1 000 kg). SI symbol: t." ;
+       :Has_Abbreviation :Tonne_Abbreviation .
+
+:Liter rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Volume ;
+       rdfs:label "Liter" ;
+       :Has_Abbreviation :Liter_Abbreviation .
+
+:Cubic_Meter rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Volume ;
+             rdfs:label "Cubic Meter" ;
+             :Has_Abbreviation :Cubic_Meter_Abbreviation .
+
+
+###  Generated by hand — OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi

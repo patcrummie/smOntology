@@ -1,0 +1,5 @@
+Ontology Dev notes - 
+hasVolume ties volume to container. not good enough. a material might have volume, but the inference that a material is a container is totally wrong. So Volume need to be a class.
+
+
+ss1 - has volume does not apply to material. Volume is just one way of expressing a material quantity

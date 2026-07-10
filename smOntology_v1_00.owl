@@ -1,0 +1,635 @@
+@prefix : <http://www.semanticweb.org/pat_c/ontologies/2026/5/MF7#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://www.semanticweb.org/pat_c/ontologies/2026/5/MF7> .
+
+###  Naming convention: IRI local names use Capitalised_Words_With_Underscores.
+###  rdfs:label provides the human-readable form with spaces.
+###  All abbreviations follow BIPM SI 9th edition.
+
+<http://www.semanticweb.org/pat_c/ontologies/2026/5/MF7> rdf:type owl:Ontology ;
+    rdfs:comment "Manufacturing Ontology v7. Changes from MF6: Density added as a Measure subclass with unit individuals (kg/m³, g/mL, t/m³). Derivation_Formula pattern added so a Measure relationship can point at a named formula in the external Calculation Engine (calc_tool) rather than encoding arithmetic in the ontology itself. Physical_Property_Value introduced as a shared superclass of Material_Quantity and Capacity, closing the Has_Numeric_Value domain gap noted in MF_Rules1. Value_Status (Valid/Questionable/Suspect/Bad) and Was_Derived_By added on Physical_Property_Value to tag any measured-or-derived quantity with data-quality status and provenance. Verification_Status (Verified/Unverified) added on Filled_Content to tag material-identity assertions separately from numeric value quality. Has_Quantity promoted to a real super-property of the four existing quantity-linking properties. Conversion_Factor_To_Base (previously in the standalone MF_Rules1.ttl SHACL layer) is folded directly into this file as a plain datatype property: since formula evaluation now happens by reference to the external Calculation Engine rather than embedded SHACL-SPARQL arithmetic, everything expressible needed is expressible in standard OWL, and there is no separate MF_Rules file from this version forward." .
+
+
+#################################################################
+#    Data Properties
+#################################################################
+
+:Lot_ID rdf:type owl:DatatypeProperty ;
+        rdfs:domain :Material_Lot ;
+        rdfs:range xsd:string ;
+        rdfs:label "Lot ID" .
+
+:Material_ID rdf:type owl:DatatypeProperty ;
+             rdfs:domain :Material_Lot ;
+             rdfs:range xsd:string ;
+             rdfs:label "Material ID" .
+
+:Has_Numeric_Value rdf:type owl:DatatypeProperty ;
+                   rdfs:domain :Physical_Property_Value ;
+                   rdfs:range xsd:decimal ;
+                   rdfs:label "Has Numeric Value" ;
+                   rdfs:comment "Domain widened from Material_Quantity (MF6) to Physical_Property_Value so it applies equally to Material_Quantity and Capacity without entailing one is the other." .
+
+:Packaging_Unit_Count rdf:type owl:DatatypeProperty ;
+                      rdfs:domain :Material_Lot ;
+                      rdfs:range xsd:nonNegativeInteger ;
+                      rdfs:label "Packaging Unit Count" .
+
+:Abbreviation_Value rdf:type owl:DatatypeProperty ;
+                    rdfs:domain :UOM_Abbreviation ;
+                    rdfs:range xsd:string ;
+                    rdfs:label "Abbreviation Value" .
+
+:Formula_Name rdf:type owl:DatatypeProperty ;
+              rdfs:domain :Derivation_Formula ;
+              rdfs:range xsd:string ;
+              rdfs:label "Formula Name" ;
+              rdfs:comment "Matches a formula's `name` in the calc_tool Calculation Engine database. Used to look up the formula's parameters and evaluate it (GET /api/formulas/{name}, POST /api/calculate) rather than encoding the arithmetic here." .
+
+:Conversion_Factor_To_Base rdf:type owl:DatatypeProperty ;
+                           rdfs:domain :Unit_Of_Measurement ;
+                           rdfs:range xsd:decimal ;
+                           rdfs:label "Conversion Factor To Base" ;
+                           rdfs:comment "Multiplier that converts one unit of this Unit_Of_Measurement into its Measure subclass's canonical base unit. Base units chosen (factor = 1): Kilogram (Mass), Cubic_Meter (Volume), Cubic_Meter_Per_Hour (Flow), Tonne_Per_Hour (Mass_Flow), Second (Time), Kilogram_Per_Cubic_Meter (Density). To convert any value between two units of the same Measure: value_in_target = value_in_source * (factor_source / factor_target)." .
+
+
+#################################################################
+#    Object Properties
+#################################################################
+
+:Has_Quantity rdf:type owl:ObjectProperty ;
+              rdfs:subPropertyOf owl:topObjectProperty ;
+              rdfs:range :Physical_Property_Value ;
+              rdfs:label "Has Quantity" ;
+              rdfs:comment "Common super-property of every quantity-linking property below (Has_Material_Quantity, Has_Content_Quantity, Has_Packaging_Quantity, Standard_Quantity). Lets an agent collect every Physical_Property_Value attached to a subject via one property path, regardless of which specific relationship it came in on." .
+
+:Has_Current_Content rdf:type owl:ObjectProperty ;
+                     rdfs:subPropertyOf owl:topObjectProperty ;
+                     rdfs:domain :Vessel ;
+                     rdfs:range :Vessel_Content ;
+                     rdfs:label "Has Current Content" ;
+                     rdfs:comment "Points to either a Filled_Content individual (carrying material and quantity) or the :Empty individual. Functional — a vessel has exactly one current content state." ;
+                     rdf:type owl:FunctionalProperty .
+
+:Has_Material rdf:type owl:ObjectProperty ;
+              rdfs:subPropertyOf owl:topObjectProperty ;
+              rdfs:domain :Filled_Content ;
+              rdfs:range :Material ;
+              rdfs:label "Has Material" .
+
+:Has_Content_Quantity rdf:type owl:ObjectProperty ;
+                      rdfs:subPropertyOf owl:topObjectProperty, :Has_Quantity ;
+                      rdfs:domain :Filled_Content ;
+                      rdfs:range :Material_Quantity ;
+                      rdfs:label "Has Content Quantity" ;
+                      rdfs:comment "The current quantity of material in the vessel. Restricted to Mass or Volume units." .
+
+:Contains rdf:type owl:ObjectProperty ;
+          rdfs:subPropertyOf owl:topObjectProperty ;
+          rdfs:domain :Vessel ;
+          rdfs:range :Material ;
+          rdfs:label "Contains" .
+
+:Has_Capacity rdf:type owl:ObjectProperty ;
+              rdfs:subPropertyOf owl:topObjectProperty ;
+              rdfs:domain :Vessel ;
+              rdfs:range :Capacity ;
+              rdfs:label "Has Capacity" .
+
+:Has_Material_Quantity rdf:type owl:ObjectProperty ;
+                       rdfs:subPropertyOf :Has_Quantity ;
+                       rdfs:domain :Material_Lot ;
+                       rdfs:range :Material_Quantity ;
+                       rdfs:label "Has Material Quantity" .
+
+:Count_Of rdf:type owl:ObjectProperty ;
+          rdfs:domain :Material_Lot ;
+          rdfs:range :Packaging_Unit ;
+          rdfs:label "Count Of" ;
+          rdfs:comment "Used together with Packaging Unit Count to express lot quantity as N units of a given Packaging Unit." .
+
+:Has_Unit_Of_Measurement rdf:type owl:ObjectProperty ;
+                         rdfs:domain :Measure ;
+                         rdfs:range :Unit_Of_Measurement ;
+                         rdfs:label "Has Unit Of Measurement" .
+
+:Quantity_Has_Unit rdf:type owl:ObjectProperty ;
+                   rdfs:domain :Material_Quantity ;
+                   rdfs:range :Unit_Of_Measurement ;
+                   rdfs:label "Quantity Has Unit" .
+
+:Has_Abbreviation rdf:type owl:ObjectProperty ;
+                  rdfs:domain :Unit_Of_Measurement ;
+                  rdfs:range :UOM_Abbreviation ;
+                  rdfs:label "Has Abbreviation" .
+
+:Has_Tank_Type rdf:type owl:ObjectProperty ;
+               rdfs:subPropertyOf owl:topObjectProperty ;
+               rdfs:domain :Tank ;
+               rdfs:range :Tank_Type ;
+               rdfs:label "Has Tank Type" .
+
+:Has_Volume rdf:type owl:ObjectProperty ;
+            rdfs:subPropertyOf owl:topObjectProperty ;
+            rdfs:domain :Container ;
+            rdfs:label "Has Volume" .
+
+:Standard_Quantity rdf:type owl:ObjectProperty ;
+                   rdfs:subPropertyOf :Has_Quantity ;
+                   rdfs:domain :Package_Container ;
+                   rdfs:range :Material_Quantity ;
+                   rdfs:label "Standard Quantity" .
+
+:Content rdf:type owl:ObjectProperty ;
+         rdfs:domain :Package_Container ;
+         rdfs:range :Material ;
+         rdfs:label "Content" .
+
+:Has_Packaging_Quantity rdf:type owl:ObjectProperty ;
+                        rdfs:subPropertyOf :Has_Quantity ;
+                        rdfs:domain :Packaging_Unit ;
+                        rdfs:range :Material_Quantity ;
+                        rdfs:label "Has Packaging Quantity" .
+
+:Has_Package_Container_Type rdf:type owl:ObjectProperty ;
+                            rdfs:domain :Packaging_Unit ;
+                            rdfs:range :Package_Container ;
+                            rdfs:label "Has Package Container Type" .
+
+:Has_Parameter_Measure rdf:type owl:ObjectProperty ;
+                       rdfs:domain :Derivation_Formula ;
+                       rdfs:range :Measure ;
+                       rdfs:label "Has Parameter Measure" ;
+                       rdfs:comment "A Measure subclass this formula requires as an input parameter." .
+
+:Has_Result_Measure rdf:type owl:ObjectProperty ;
+                    rdfs:domain :Derivation_Formula ;
+                    rdfs:range :Measure ;
+                    rdfs:label "Has Result Measure" ;
+                    rdfs:comment "The Measure subclass this formula computes as its result." .
+
+:Was_Derived_By rdf:type owl:ObjectProperty ;
+                rdfs:domain :Physical_Property_Value ;
+                rdfs:range :Derivation_Formula ;
+                rdfs:label "Was Derived By" ;
+                rdfs:comment "Present iff this value was computed via the Calculation Engine rather than directly measured. Points to the Derivation_Formula used — its Formula_Name is the lookup key. A Physical_Property_Value with no Was_Derived_By triple is directly measured." .
+
+:Has_Status rdf:type owl:ObjectProperty, owl:FunctionalProperty ;
+            rdfs:domain :Physical_Property_Value ;
+            rdfs:range :Value_Status ;
+            rdfs:label "Has Status" ;
+            rdfs:comment "Data-quality tag for a measured or derived numeric value. Applies to any Physical_Property_Value (Material_Quantity, Capacity, and any future value-bearing subclass) — a generic tag, not something asserted per equipment type in this ontology." .
+
+:Has_Verification_Status rdf:type owl:ObjectProperty, owl:FunctionalProperty ;
+                         rdfs:domain :Filled_Content ;
+                         rdfs:range :Verification_Status ;
+                         rdfs:label "Has Verification Status" ;
+                         rdfs:comment "Whether the material identity of this content assertion has been confirmed (e.g. by scan/inspection) versus assumed (e.g. from a routing/recipe expectation). A separate quality dimension from Has_Status: this concerns *what* the content is, not *how much* of it there is or how it was measured." .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  --- Physical containers ---
+
+:Container rdf:type owl:Class ;
+           rdfs:label "Container" .
+
+:Vessel rdf:type owl:Class ;
+        rdfs:subClassOf :Container ;
+        rdfs:label "Vessel" .
+
+:Tank rdf:type owl:Class ;
+      rdfs:subClassOf :Vessel ;
+      rdfs:label "Tank" .
+
+:Tank_Type rdf:type owl:Class ;
+           rdfs:label "Tank Type" .
+
+:Package_Container rdf:type owl:Class ;
+                   rdfs:subClassOf :Container ;
+                   rdfs:label "Package Container" ;
+                   rdfs:comment "A container used to package material lots. Has Standard Quantity and Content properties. Capacity constraint does not apply to this branch." .
+
+:Carton rdf:type owl:Class ;
+        rdfs:subClassOf :Package_Container ;
+        rdfs:label "Carton" .
+
+:Box rdf:type owl:Class ;
+     rdfs:subClassOf :Package_Container ;
+     rdfs:label "Box" .
+
+:Drum rdf:type owl:Class ;
+      rdfs:subClassOf :Package_Container ;
+      rdfs:label "Drum" .
+
+:Cannister rdf:type owl:Class ;
+           rdfs:subClassOf :Package_Container ;
+           rdfs:label "Cannister" .
+
+:Tanker rdf:type owl:Class ;
+        rdfs:subClassOf :Package_Container ;
+        rdfs:label "Tanker" .
+
+
+###  --- Vessel Content hierarchy ---
+
+:Vessel_Content rdf:type owl:Class ;
+                rdfs:label "Vessel Content" ;
+                rdfs:comment "The current content state of a Vessel — either Filled Content or Empty Content." .
+
+:Filled_Content rdf:type owl:Class ;
+                rdfs:subClassOf :Vessel_Content ;
+                rdfs:subClassOf [
+                    rdf:type owl:Restriction ;
+                    owl:onProperty :Has_Material ;
+                    owl:minCardinality "1"^^xsd:nonNegativeInteger
+                ] ;
+                rdfs:subClassOf [
+                    rdf:type owl:Restriction ;
+                    owl:onProperty :Has_Content_Quantity ;
+                    owl:minCardinality "1"^^xsd:nonNegativeInteger
+                ] ;
+                rdfs:subClassOf [
+                    rdf:type owl:Restriction ;
+                    owl:onProperty :Has_Content_Quantity ;
+                    owl:allValuesFrom [
+                        rdf:type owl:Restriction ;
+                        owl:onProperty :Quantity_Has_Unit ;
+                        owl:allValuesFrom [
+                            rdf:type owl:Class ;
+                            owl:unionOf ( :Mass :Volume )
+                        ]
+                    ]
+                ] ;
+                rdfs:label "Filled Content" ;
+                rdfs:comment "A vessel content state where material is present. Quantity unit must be Mass or Volume. May carry a Has_Verification_Status tag on whether the material identity has been confirmed." .
+
+:Empty_Content rdf:type owl:Class ;
+               rdfs:subClassOf :Vessel_Content ;
+               rdfs:label "Empty Content" ;
+               rdfs:comment "Represents a vessel containing no material. Use the singleton individual :Empty to assert this state." .
+
+[ rdf:type owl:AllDisjointClasses ;
+  owl:members ( :Filled_Content :Empty_Content )
+] .
+
+
+###  --- Material ---
+
+:Material rdf:type owl:Class ;
+          rdfs:label "Material" .
+
+:Material_Lot rdf:type owl:Class ;
+              rdfs:label "Material Lot" ;
+              rdfs:comment "A given quantity of material that can be tracked. May be a raw ingredient, intermediate product, byproduct, waste, or finished product." .
+
+:Material_Quantity rdf:type owl:Class ;
+                   rdfs:subClassOf :Physical_Property_Value ;
+                   rdfs:label "Material Quantity" .
+
+
+###  --- Physical Property Values: measured-or-derived observations and their data quality ---
+
+:Physical_Property_Value rdf:type owl:Class ;
+                         rdfs:label "Physical Property Value" ;
+                         rdfs:comment "A single numeric value in some Measure dimension, carrying a unit, a data-quality Status, and (if derived rather than directly measured) a link to the formula that produced it. Material_Quantity (an actual/current amount) and Capacity (a potential/limit amount) are both Physical_Property_Values — siblings, not equated. Generic across any equipment type: this ontology does not enumerate per-asset values, only the shape a value takes." .
+
+:Value_Status rdf:type owl:Class ;
+             rdfs:label "Value Status" ;
+             rdfs:comment "Data-quality classification of a Physical_Property_Value, based on the qualification state of contributing sensors and/or formulas. A generic tag applicable to any measured or derived quantity, not specific to any equipment type." .
+
+:Verification_Status rdf:type owl:Class ;
+                     rdfs:label "Verification Status" ;
+                     rdfs:comment "Whether a material-identity assertion (e.g. a Filled_Content's Has_Material) has been confirmed rather than assumed. A generic tag, distinct from Value_Status, which concerns quantity rather than identity." .
+
+
+###  --- Measurement types ---
+
+:Measure rdf:type owl:Class ;
+         rdfs:label "Measure" ;
+         rdfs:comment "A type of physical measurement. All subclass names use singular form." .
+
+:Mass rdf:type owl:Class ;
+      rdfs:subClassOf :Measure ;
+      rdfs:label "Mass" .
+
+:Volume rdf:type owl:Class ;
+        rdfs:subClassOf :Measure ;
+        rdfs:label "Volume" .
+
+:Flow rdf:type owl:Class ;
+      rdfs:subClassOf :Measure ;
+      rdfs:label "Flow" ;
+      rdfs:comment "Volumetric flow rate. Units: Cubic Meter Per Hour (m³/h), Liter Per Minute (L/min)." .
+
+:Mass_Flow rdf:type owl:Class ;
+           rdfs:subClassOf :Measure ;
+           rdfs:label "Mass Flow" ;
+           rdfs:comment "Mass flow rate. Units: Tonne Per Hour (t/h), Kilogram Per Minute (kg/min)." .
+
+:Time rdf:type owl:Class ;
+      rdfs:subClassOf :Measure ;
+      rdfs:label "Time" ;
+      rdfs:comment "Duration. Units: Day (d), Hour (h), Minute (min), Second (s), Millisecond (ms)." .
+
+:Density rdf:type owl:Class ;
+         rdfs:subClassOf :Measure ;
+         rdfs:label "Density" ;
+         rdfs:comment "Mass per unit volume. Units: Kilogram Per Cubic Meter (kg/m³, base), Gram Per Milliliter (g/mL), Tonne Per Cubic Meter (t/m³). Related to Mass and Volume via the Derivation_Formula individuals Density_From_Mass_Volume, Mass_From_Volume_Density, and Volume_From_Mass_Density — any two of Mass, Volume, Density determine the third." .
+
+:Capacity rdf:type owl:Class ;
+          rdfs:subClassOf :Measure ;
+          rdfs:subClassOf :Physical_Property_Value ;
+          rdfs:subClassOf [
+              rdf:type owl:Restriction ;
+              owl:onProperty :Has_Unit_Of_Measurement ;
+              owl:allValuesFrom [
+                  rdf:type owl:Class ;
+                  owl:unionOf ( :Mass :Volume )
+              ]
+          ] ;
+          rdfs:label "Capacity" ;
+          rdfs:comment "The ability of a Vessel to contain material. A Measure restricted to Mass or Volume units only. Also a Physical_Property_Value (as of MF7) so it can carry Has_Numeric_Value, Has_Status and Was_Derived_By on the same footing as Material_Quantity, without being conflated with it." .
+
+
+###  --- Units of measurement ---
+
+:Unit_Of_Measurement rdf:type owl:Class ;
+                     rdfs:label "Unit Of Measurement" .
+
+:UOM_Abbreviation rdf:type owl:Class ;
+                  rdfs:label "UOM Abbreviation" ;
+                  rdfs:comment "The official SI abbreviation for a unit of measurement (BIPM 9th edition)." .
+
+
+###  --- Packaging ---
+
+:Packaging_Unit rdf:type owl:Class ;
+                rdfs:label "Packaging Unit" ;
+                rdfs:comment "A packaging configuration for material lots. A lot quantity may be expressed as a count of Packaging Units." .
+
+
+###  --- Derivation Formulas ---
+
+:Derivation_Formula rdf:type owl:Class ;
+                    rdfs:label "Derivation Formula" ;
+                    rdfs:comment "A pointer to a formula registered in the external Calculation Engine (calc_tool) that computes one Measure from others of the same physical relationship. The ontology records only the universal relationship between Measure types and the lookup key (Formula_Name) — the formula's expression, parameter metadata and test cases live in calc_tool, and per-asset formula assignments (e.g. a specific tank's level-to-volume geometry formula) live in the knowledge graph, not here. Reused for any Measure relationship, not just Mass/Volume/Density." .
+
+
+#################################################################
+#    Individuals — Empty Content
+#################################################################
+
+:Empty rdf:type owl:NamedIndividual, :Empty_Content ;
+       rdfs:label "Empty" ;
+       rdfs:comment "Singleton individual representing an empty vessel. Assert: myTank Has_Current_Content :Empty" .
+
+
+#################################################################
+#    Individuals — Value Status
+#################################################################
+
+:Valid rdf:type owl:NamedIndividual, :Value_Status ;
+       rdfs:label "Valid" ;
+       rdfs:comment "All measurement sensors qualified, all formulae validated." .
+
+:Questionable rdf:type owl:NamedIndividual, :Value_Status ;
+              rdfs:label "Questionable" ;
+              rdfs:comment "Some sensors not qualified or formulae not validated." .
+
+:Suspect rdf:type owl:NamedIndividual, :Value_Status ;
+         rdfs:label "Suspect" ;
+         rdfs:comment "Measurement (or contributing measurement) marked as not good quality, or formula marked \"NOT FOR GENERAL USE\"." .
+
+:Bad rdf:type owl:NamedIndividual, :Value_Status ;
+     rdfs:label "Bad" ;
+     rdfs:comment "Measurement (or contributing measurement) failed, out of valid range, or formula execution errored. Value should not be used for decisions." .
+
+[ rdf:type owl:AllDifferent ;
+  owl:distinctMembers ( :Valid :Questionable :Suspect :Bad )
+] .
+
+
+#################################################################
+#    Individuals — Verification Status
+#################################################################
+
+:Verified rdf:type owl:NamedIndividual, :Verification_Status ;
+          rdfs:label "Verified" .
+
+:Unverified rdf:type owl:NamedIndividual, :Verification_Status ;
+            rdfs:label "Unverified" .
+
+[ rdf:type owl:AllDifferent ;
+  owl:distinctMembers ( :Verified :Unverified )
+] .
+
+
+#################################################################
+#    Individuals — UOM Abbreviations
+#    Mass and Volume (from MF5)
+#################################################################
+
+:Kilogram_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                       :Abbreviation_Value "kg" ;
+                       rdfs:label "Kilogram Abbreviation" .
+
+:Tonne_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                    :Abbreviation_Value "t" ;
+                    rdfs:label "Tonne Abbreviation" .
+
+:Liter_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                    :Abbreviation_Value "L" ;
+                    rdfs:label "Liter Abbreviation" ;
+                    rdfs:comment "Both 'L' and 'l' are accepted by SI; 'L' is preferred to avoid confusion with the numeral 1." .
+
+:Cubic_Meter_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                          :Abbreviation_Value "m³" ;
+                          rdfs:label "Cubic Meter Abbreviation" .
+
+###  Flow abbreviations
+:Cubic_Meter_Per_Hour_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                                   :Abbreviation_Value "m³/h" ;
+                                   rdfs:label "Cubic Meter Per Hour Abbreviation" .
+
+:Liter_Per_Minute_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                               :Abbreviation_Value "L/min" ;
+                               rdfs:label "Liter Per Minute Abbreviation" .
+
+###  Mass Flow abbreviations
+:Tonne_Per_Hour_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                             :Abbreviation_Value "t/h" ;
+                             rdfs:label "Tonne Per Hour Abbreviation" .
+
+:Kilogram_Per_Minute_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                                  :Abbreviation_Value "kg/min" ;
+                                  rdfs:label "Kilogram Per Minute Abbreviation" .
+
+###  Time abbreviations
+:Day_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                  :Abbreviation_Value "d" ;
+                  rdfs:label "Day Abbreviation" .
+
+:Hour_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                   :Abbreviation_Value "h" ;
+                   rdfs:label "Hour Abbreviation" .
+
+:Minute_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                     :Abbreviation_Value "min" ;
+                     rdfs:label "Minute Abbreviation" ;
+                     rdfs:comment "SI symbol for minute of time. Distinct from 'm' (metre)." .
+
+:Second_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                     :Abbreviation_Value "s" ;
+                     rdfs:label "Second Abbreviation" ;
+                     rdfs:comment "SI base unit of time." .
+
+:Millisecond_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                          :Abbreviation_Value "ms" ;
+                          rdfs:label "Millisecond Abbreviation" .
+
+###  Density abbreviations
+:Kilogram_Per_Cubic_Meter_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                                       :Abbreviation_Value "kg/m³" ;
+                                       rdfs:label "Kilogram Per Cubic Meter Abbreviation" .
+
+:Gram_Per_Milliliter_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                                  :Abbreviation_Value "g/mL" ;
+                                  rdfs:label "Gram Per Milliliter Abbreviation" .
+
+:Tonne_Per_Cubic_Meter_Abbreviation rdf:type owl:NamedIndividual, :UOM_Abbreviation ;
+                                    :Abbreviation_Value "t/m³" ;
+                                    rdfs:label "Tonne Per Cubic Meter Abbreviation" .
+
+
+#################################################################
+#    Individuals — Units of Measurement
+#    Conversion_Factor_To_Base folded in directly (previously in MF_Rules1.ttl)
+#################################################################
+
+:Kilogram rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Mass ;
+          rdfs:label "Kilogram" ;
+          :Has_Abbreviation :Kilogram_Abbreviation ;
+          :Conversion_Factor_To_Base "1"^^xsd:decimal .
+
+:Tonne rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Mass ;
+       rdfs:label "Tonne" ;
+       rdfs:comment "Metric tonne (1 000 kg)." ;
+       :Has_Abbreviation :Tonne_Abbreviation ;
+       :Conversion_Factor_To_Base "1000"^^xsd:decimal .
+
+:Liter rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Volume ;
+       rdfs:label "Liter" ;
+       :Has_Abbreviation :Liter_Abbreviation ;
+       :Conversion_Factor_To_Base "0.001"^^xsd:decimal .
+
+:Cubic_Meter rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Volume ;
+             rdfs:label "Cubic Meter" ;
+             :Has_Abbreviation :Cubic_Meter_Abbreviation ;
+             :Conversion_Factor_To_Base "1"^^xsd:decimal .
+
+###  Flow units
+:Cubic_Meter_Per_Hour rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Flow ;
+                      rdfs:label "Cubic Meter Per Hour" ;
+                      :Has_Abbreviation :Cubic_Meter_Per_Hour_Abbreviation ;
+                      :Conversion_Factor_To_Base "1"^^xsd:decimal .
+
+:Liter_Per_Minute rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Flow ;
+                  rdfs:label "Liter Per Minute" ;
+                  :Has_Abbreviation :Liter_Per_Minute_Abbreviation ;
+                  :Conversion_Factor_To_Base "0.06"^^xsd:decimal .
+
+###  Mass Flow units
+:Tonne_Per_Hour rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Mass_Flow ;
+                rdfs:label "Tonne Per Hour" ;
+                :Has_Abbreviation :Tonne_Per_Hour_Abbreviation ;
+                :Conversion_Factor_To_Base "1"^^xsd:decimal .
+
+:Kilogram_Per_Minute rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Mass_Flow ;
+                     rdfs:label "Kilogram Per Minute" ;
+                     :Has_Abbreviation :Kilogram_Per_Minute_Abbreviation ;
+                     :Conversion_Factor_To_Base "0.06"^^xsd:decimal .
+
+###  Time units
+:Day rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Time ;
+     rdfs:label "Day" ;
+     :Has_Abbreviation :Day_Abbreviation ;
+     :Conversion_Factor_To_Base "86400"^^xsd:decimal .
+
+:Hour rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Time ;
+      rdfs:label "Hour" ;
+      :Has_Abbreviation :Hour_Abbreviation ;
+      :Conversion_Factor_To_Base "3600"^^xsd:decimal .
+
+:Minute rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Time ;
+        rdfs:label "Minute" ;
+        :Has_Abbreviation :Minute_Abbreviation ;
+        :Conversion_Factor_To_Base "60"^^xsd:decimal .
+
+:Second rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Time ;
+        rdfs:label "Second" ;
+        rdfs:comment "SI base unit of time." ;
+        :Has_Abbreviation :Second_Abbreviation ;
+        :Conversion_Factor_To_Base "1"^^xsd:decimal .
+
+:Millisecond rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Time ;
+             rdfs:label "Millisecond" ;
+             :Has_Abbreviation :Millisecond_Abbreviation ;
+             :Conversion_Factor_To_Base "0.001"^^xsd:decimal .
+
+###  Density units
+:Kilogram_Per_Cubic_Meter rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Density ;
+                          rdfs:label "Kilogram Per Cubic Meter" ;
+                          rdfs:comment "Base unit for Density." ;
+                          :Has_Abbreviation :Kilogram_Per_Cubic_Meter_Abbreviation ;
+                          :Conversion_Factor_To_Base "1"^^xsd:decimal .
+
+:Gram_Per_Milliliter rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Density ;
+                     rdfs:label "Gram Per Milliliter" ;
+                     rdfs:comment "Numerically equal to kg/L and to g/cm³." ;
+                     :Has_Abbreviation :Gram_Per_Milliliter_Abbreviation ;
+                     :Conversion_Factor_To_Base "1000"^^xsd:decimal .
+
+:Tonne_Per_Cubic_Meter rdf:type owl:NamedIndividual, :Unit_Of_Measurement, :Density ;
+                       rdfs:label "Tonne Per Cubic Meter" ;
+                       rdfs:comment "Numerically equal to kg/L and to g/mL — common in bulk material handling." ;
+                       :Has_Abbreviation :Tonne_Per_Cubic_Meter_Abbreviation ;
+                       :Conversion_Factor_To_Base "1000"^^xsd:decimal .
+
+
+#################################################################
+#    Individuals — Derivation Formulas
+#
+#    Universal physical relationships only (true for every material,
+#    unconditionally) — the same category as the unit individuals
+#    above. Asset-specific formulas (e.g. a particular tank's
+#    level-to-volume geometry formula) are NOT enumerated here; they
+#    are knowledge-graph instance data that uses this same pattern.
+#################################################################
+
+:Density_From_Mass_Volume rdf:type owl:NamedIndividual, :Derivation_Formula ;
+                          rdfs:label "Density From Mass Volume" ;
+                          :Formula_Name "density_from_mass_volume" ;
+                          :Has_Parameter_Measure :Mass, :Volume ;
+                          :Has_Result_Measure :Density .
+
+:Mass_From_Volume_Density rdf:type owl:NamedIndividual, :Derivation_Formula ;
+                          rdfs:label "Mass From Volume Density" ;
+                          :Formula_Name "mass_from_volume_density" ;
+                          :Has_Parameter_Measure :Volume, :Density ;
+                          :Has_Result_Measure :Mass .
+
+:Volume_From_Mass_Density rdf:type owl:NamedIndividual, :Derivation_Formula ;
+                          rdfs:label "Volume From Mass Density" ;
+                          :Formula_Name "volume_from_mass_density" ;
+                          :Has_Parameter_Measure :Mass, :Density ;
+                          :Has_Result_Measure :Volume .
+
+
+###  Generated by hand — OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi
